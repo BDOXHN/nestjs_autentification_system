@@ -1,9 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';;
+import { UserDto } from './dto/user.dto';
+import { LoginUserDto } from './dto/login-user.dto';
 import { UserEntity } from './entities/user.entity';
+import { toUserDto } from './touserdto';
+import * as bcrypt from 'bcrypt'
 
 @Injectable()
 export class UserService {
@@ -12,24 +15,51 @@ export class UserService {
     private userRepository: Repository<UserEntity>,
   ) {}
 
-
-  create(createUserDto: CreateUserDto) {
-    return this.userRepository.save(createUserDto);
+  // Найти по требуемой опции
+  async findOne(options?: object): Promise<UserDto> {
+    const user =  await this.userRepository.findOne(options);    
+    return toUserDto(user);  
   }
 
-  findAll() {
-    return this.userRepository.find();
+  // Создать пользователя (зарегистрировать)
+  async create(userDto: CreateUserDto): Promise<UserDto> {    
+    const { fullName, email, username, password } = userDto;
+    
+    // check if the user exists in the db    
+    const userInDb = await this.userRepository.findOne({ 
+        where: { username } 
+    });
+    if (userInDb) {
+        throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);    
+    }
+    
+    const userCreated = this.userRepository.create({ fullName, email, username, password });
+    const userSaved = await this.userRepository.save(userCreated);
+    delete userSaved.password
+      if (!userSaved) {
+        throw new BadRequestException('Error at user registration');
+      }
+
+    return toUserDto(userSaved);  
   }
 
-  findOne(id: number) {
-    return this.userRepository.findBy({id: id});
-  }
-
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return this.userRepository.update(id, updateUserDto);
-  }
-
-  remove(id: number) {
-    return this.userRepository.delete(id);
+  async findByLogin({ username, password }: LoginUserDto): Promise<UserDto> {    
+    const user = await this.userRepository.findOne({ where: { username } });
+    
+    if (!user) {
+        throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);    
+    }
+    
+    let areEqual = false;
+    // compare passwords
+    if (await bcrypt.compare(password, user.password)) {
+      areEqual = true;
+    }   
+    
+    if (!areEqual) {
+        throw new HttpException('Invalid password', HttpStatus.UNAUTHORIZED);    
+    }
+    
+    return toUserDto(user);  
   }
 }
