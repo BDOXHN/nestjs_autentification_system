@@ -40,6 +40,19 @@ export class AuthService {
   async logout(
     @Res({passthrough: true}) response: Response,
     @Req() request: Request) {
+    
+    await this.acces(request);
+
+    const cleared = response.clearCookie('jwt');
+
+    if (!cleared) {
+      throw new BadRequestException('Cookie wasnt cleared');
+    }
+
+    return 'Succes logout';
+  }
+
+  async acces(@Req() request: Request) {
     const cookie = request.cookies['jwt'];
 
     if (!cookie) {
@@ -49,16 +62,10 @@ export class AuthService {
     const data = await this.jwtService.verifyAsync(cookie);
     
     if (!data) {
-      throw new BadRequestException('You must login first');
+      throw new BadRequestException('Error: cookie wasnt verifed');
     }
 
-    const cleared = response.clearCookie('jwt');
-
-    if (!cleared) {
-      throw new BadRequestException('Cookie wasnt cleared');
-    }
-
-    return 'Succes logout';
+    return true;
   }
 
 }
