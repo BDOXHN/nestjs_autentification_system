@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, Res, BadRequestException, Req } from '@nestjs/common';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { LoginUserDto } from 'src/user/dto/login-user.dto';
 import { AuthService } from './auth.service';
 import { Response, Request } from 'express';
+import { async } from 'rxjs';
 
 @Controller('auth')
 export class AuthController {
@@ -10,18 +11,24 @@ export class AuthController {
 
   @Post('register')
   public async register(@Body() createUserDto: CreateUserDto,) {
-    const user = await this.authService.register(createUserDto,);
-    return 'succes registration';
+    const succesReg = await this.authService.register(createUserDto,);
+    return succesReg;
   }
 
   @Post('login')
   public async login(
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) response: Response) {
+    const succesLogin = await this.authService.login(loginUserDto, response);
+    return succesLogin;
+  }
 
-    const jwt = await this.authService.login(loginUserDto)
-    response.cookie('jwt', jwt, { httpOnly: true });
-    return 'succes login'
+  @Post('logout')
+  async logout(
+    @Res({passthrough: true}) response: Response,
+    @Req() request: Request) {
+    const succesLogout = await this.authService.logout(response, request);
+    return succesLogout;
   }
 
 }
