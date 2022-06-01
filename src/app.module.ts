@@ -5,12 +5,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { AuthModule } from './auth/auth.module';
+import { PostModule } from './post/post.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(),
     AuthModule,
-    UserModule
+    UserModule,
+    PostModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -34,14 +34,14 @@ export class AuthService {
       throw new BadRequestException('Error: cookie not responsed')
     }
 
-    return 'Succes login';
+    return user.username + ' succes login';
   }
 
   async logout(
     @Res({passthrough: true}) response: Response,
     @Req() request: Request) {
     
-    await this.acces(request);
+    const userDto = await this.acces(request);
 
     const cleared = response.clearCookie('jwt');
 
@@ -49,23 +49,31 @@ export class AuthService {
       throw new BadRequestException('Cookie wasnt cleared');
     }
 
-    return 'Succes logout';
+    return userDto.fullName + ' succes logout';
   }
 
   async acces(@Req() request: Request) {
+    // закодированный (подписанный) токен с компьютера пользователя
     const cookie = request.cookies['jwt'];
 
     if (!cookie) {
       throw new BadRequestException('You must login first');
     }
 
-    const data = await this.jwtService.verifyAsync(cookie);
+    const data = await this.jwtService.verifyAsync(cookie, {secret: 'secret'});
     
     if (!data) {
       throw new BadRequestException('Error: cookie wasnt verifed');
     }
 
-    return true;
+    // Вытаскиваем имя пользователя из куки файла
+    // Ищем по имени в БД и получаем ДТО
+    const userData = await this.jwtService.decode(cookie);
+
+    const username = userData['username'];
+    const userDto = await this.userService.findOne({ where: { username } }); 
+
+    return userDto;
   }
 
 }

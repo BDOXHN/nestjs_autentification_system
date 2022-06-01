@@ -3,7 +3,6 @@ import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { LoginUserDto } from 'src/user/dto/login-user.dto';
 import { AuthService } from './auth.service';
 import { Response, Request } from 'express';
-import { async } from 'rxjs';
 
 @Controller('auth')
 export class AuthController {
